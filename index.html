@@ -1,0 +1,225 @@
+<!doctype html>
+<!-- Werkstattkarte – Web-App · © 2026 Frank Gallinat · Alle Rechte vorbehalten.
+     Vorlage für web/bauen.py; die Platzhalter /*…*/ werden beim Bauen befüllt. -->
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="author" content="Frank Gallinat">
+<meta name="copyright" content="© 2026 Frank Gallinat · Alle Rechte vorbehalten">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Werkstattkarte">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#FBFCFB" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#171C1F" media="(prefers-color-scheme: dark)">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<title>Werkstattkarte</title>
+<style>
+/* Farben wie in den Karten und der Android-App (Android: res/values/colors.xml, values-night) */
+:root{color-scheme:light dark;--grund:#ECEFEE;--panel:#FBFCFB;--linie:#C2CAC9;--tinte2:#4B5457;--blau:#11467F;
+  --leiste:56px;--unten:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root{--grund:#101416;--panel:#171C1F;--linie:#2F3739;--tinte2:#A5AFB1;--blau:#82B4EC}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--grund);overflow:hidden}
+body{position:fixed;inset:0;display:flex;flex-direction:column;
+  padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) 0 env(safe-area-inset-left,0px);
+  font:14px -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;color:var(--tinte2)}
+#inhalt{position:relative;flex:1;min-height:0}
+#inhalt iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:var(--grund)}
+#inhalt iframe[hidden]{display:none}
+nav{display:flex;flex:none;background:var(--panel);border-top:1px solid var(--linie);padding-bottom:var(--unten)}
+nav button{appearance:none;border:0;margin:0;background:none;color:var(--tinte2);font:inherit;cursor:pointer;
+  height:var(--leiste);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0}
+nav button:active{background:color-mix(in srgb,var(--tinte2) 12%,transparent)}
+.reiter{flex:1;min-width:0;border-top:3px solid transparent!important;
+  font:700 15px/1 "Roboto Condensed","Arial Narrow",-apple-system,sans-serif;font-stretch:condensed;
+  letter-spacing:.12em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.reiter span{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;padding:0 6px}
+.reiter[aria-selected=true]{color:var(--blau);border-top-color:var(--blau)!important}
+#sprache{width:64px;flex:none;font:700 13px/1 "Roboto Condensed","Arial Narrow",-apple-system,sans-serif;letter-spacing:.08em;gap:1px}
+#info{width:52px;flex:none}
+nav svg{fill:currentColor;display:block}
+:lang(ar) .reiter,:lang(th) .reiter,:lang(ru) .reiter,:lang(uk) .reiter,:lang(vi) .reiter{letter-spacing:.02em}
+
+dialog{border:0;border-radius:14px;padding:0;max-width:min(92vw,420px);width:100%;max-height:80vh;
+  background:var(--panel);color:inherit;box-shadow:0 12px 40px rgba(0,0,0,.35)}
+dialog::backdrop{background:rgba(0,0,0,.4)}
+dialog h2{margin:0;padding:18px 20px 8px;font-size:18px;color:var(--blau)}
+dialog .text{padding:4px 20px 8px;line-height:1.5;white-space:pre-line}
+dialog .knoepfe{display:flex;justify-content:flex-end;padding:8px 12px 12px}
+dialog .knoepfe button{appearance:none;border:0;background:none;color:var(--blau);font:600 15px/1 inherit;
+  font-family:inherit;padding:12px 14px;border-radius:8px;cursor:pointer}
+#liste{list-style:none;margin:0;padding:4px 0 8px;overflow:auto;max-height:calc(80vh - 120px)}
+#liste button{appearance:none;border:0;background:none;width:100%;text-align:start;font:inherit;font-size:16px;
+  color:inherit;padding:12px 20px;display:flex;align-items:center;gap:14px;cursor:pointer}
+#liste button::before{content:"";width:18px;height:18px;border-radius:50%;border:2px solid var(--tinte2);flex:none}
+#liste button[aria-checked=true]::before{border-color:var(--blau);background:radial-gradient(var(--blau) 0 4px,transparent 5px)}
+#liste button:active{background:color-mix(in srgb,var(--tinte2) 12%,transparent)}
+.ltr{direction:ltr;unicode-bidi:isolate}
+</style>
+</head>
+<body>
+<main id="inhalt"></main>
+<nav id="leiste">
+  <button class="reiter" data-karte="0" role="tab"><span></span></button>
+  <button class="reiter" data-karte="1" role="tab"><span></span></button>
+  <button id="sprache" type="button">
+    <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M11.99,2C6.47,2 2,6.48 2,12s4.47,10 9.99,10C17.52,22 22,17.52 22,12S17.52,2 11.99,2zM18.92,8h-2.95c-0.32,-1.25 -0.78,-2.45 -1.38,-3.56 1.84,0.63 3.37,1.91 4.33,3.56zM12,4.04c0.83,1.2 1.48,2.53 1.91,3.96h-3.82c0.43,-1.43 1.08,-2.76 1.91,-3.96zM4.26,14C4.1,13.36 4,12.69 4,12s0.1,-1.36 0.26,-2h3.38c-0.08,0.66 -0.14,1.32 -0.14,2 0,0.68 0.06,1.34 0.14,2L4.26,14zM5.08,16h2.95c0.32,1.25 0.78,2.45 1.38,3.56 -1.84,-0.63 -3.37,-1.9 -4.33,-3.56zM8.03,8L5.08,8c0.96,-1.66 2.49,-2.93 4.33,-3.56C8.81,5.55 8.35,6.75 8.03,8zM12,19.96c-0.83,-1.2 -1.48,-2.53 -1.91,-3.96h3.82c-0.43,1.43 -1.08,2.76 -1.91,3.96zM14.34,14L9.66,14c-0.09,-0.66 -0.16,-1.32 -0.16,-2 0,-0.68 0.07,-1.35 0.16,-2h4.68c0.09,0.65 0.16,1.32 0.16,2 0,0.68 -0.07,1.34 -0.16,2zM14.59,19.56c0.6,-1.11 1.06,-2.31 1.38,-3.56h2.95c-0.96,1.65 -2.49,2.93 -4.33,3.56zM16.36,14c0.08,-0.66 0.14,-1.32 0.14,-2 0,-0.68 -0.06,-1.34 -0.14,-2h3.38c0.16,0.64 0.26,1.31 0.26,2s-0.1,1.36 -0.26,2h-3.38z"/></svg>
+    <span id="sprachcode"></span>
+  </button>
+  <button id="info" type="button">
+    <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path d="M11,7h2v2h-2zM11,11h2v6h-2zM12,2C6.48,2 2,6.48 2,12s4.48,10 10,10 10,-4.48 10,-10S17.52,2 12,2zM12,20c-4.41,0 -8,-3.59 -8,-8s3.59,-8 8,-8 8,3.59 8,8 -3.59,8 -8,8z"/></svg>
+  </button>
+</nav>
+
+<dialog id="sprachdialog">
+  <h2 id="sprachtitel"></h2>
+  <ul id="liste" role="radiogroup"></ul>
+</dialog>
+<dialog id="infodialog">
+  <h2 id="infotitel"></h2>
+  <div class="text" id="infotext"></div>
+  <div class="knoepfe"><button type="button" id="schliessen"></button></div>
+</dialog>
+
+<script>
+const SPRACHEN = [{"code": "de", "name": "Deutsch", "rtl": false}, {"code": "en", "name": "English", "rtl": false}, {"code": "es", "name": "Español", "rtl": false}, {"code": "fr", "name": "Français", "rtl": false}, {"code": "it", "name": "Italiano", "rtl": false}, {"code": "pl", "name": "Polski", "rtl": false}, {"code": "tr", "name": "Türkçe", "rtl": false}, {"code": "ru", "name": "Русский", "rtl": false}, {"code": "uk", "name": "Українська", "rtl": false}, {"code": "ar", "name": "العربية", "rtl": true}, {"code": "th", "name": "ไทย", "rtl": false}, {"code": "vi", "name": "Tiếng Việt", "rtl": false}];
+const TEXTE = {"de": {"app_name": "Werkstattkarte International", "reiter_kfz": "Kfz", "reiter_metall": "Metall", "info": "Info", "info_version": "Version {v}", "rechte_vorbehalten": "Alle Rechte vorbehalten.", "info_hinweis": "Lernhilfe, kein Ersatz für das Tabellenbuch. Maßgeblich sind immer die Herstellerangaben.", "schliessen": "Schließen", "sprache_waehlen": "Sprache"}, "en": {"app_name": "Workshop Card", "reiter_kfz": "Automotive", "reiter_metall": "Metal", "info": "About", "info_version": "Version {v}", "rechte_vorbehalten": "All rights reserved.", "info_hinweis": "Learning aid, not a substitute for the reference handbook. The manufacturer's specifications always take precedence.", "schliessen": "Close", "sprache_waehlen": "Language"}, "es": {"app_name": "Ficha de taller", "reiter_kfz": "Automoción", "reiter_metall": "Metal", "info": "Información", "info_version": "Versión {v}", "rechte_vorbehalten": "Todos los derechos reservados.", "info_hinweis": "Material de aprendizaje, no sustituye al manual de tablas. Prevalecen siempre los datos del fabricante.", "schliessen": "Cerrar", "sprache_waehlen": "Idioma"}, "fr": {"app_name": "Fiche d'atelier", "reiter_kfz": "Automobile", "reiter_metall": "Métal", "info": "À propos", "info_version": "Version {v}", "rechte_vorbehalten": "Tous droits réservés.", "info_hinweis": "Aide à l'apprentissage, ne remplace pas le recueil de tableaux. Les données du constructeur font toujours foi.", "schliessen": "Fermer", "sprache_waehlen": "Langue"}, "it": {"app_name": "Scheda d'officina", "reiter_kfz": "Auto", "reiter_metall": "Metallo", "info": "Informazioni", "info_version": "Versione {v}", "rechte_vorbehalten": "Tutti i diritti riservati.", "info_hinweis": "Supporto didattico, non sostituisce il manuale tecnico. Fanno sempre fede i dati del costruttore.", "schliessen": "Chiudi", "sprache_waehlen": "Lingua"}, "pl": {"app_name": "Karta warsztatowa", "reiter_kfz": "Motoryzacja", "reiter_metall": "Metal", "info": "Informacje", "info_version": "Wersja {v}", "rechte_vorbehalten": "Wszelkie prawa zastrzeżone.", "info_hinweis": "Pomoc dydaktyczna, nie zastępuje poradnika tabelarycznego. Wiążące są zawsze dane producenta.", "schliessen": "Zamknij", "sprache_waehlen": "Język"}, "tr": {"app_name": "Atölye Kartı", "reiter_kfz": "Otomotiv", "reiter_metall": "Metal", "info": "Bilgi", "info_version": "Sürüm {v}", "rechte_vorbehalten": "Tüm hakları saklıdır.", "info_hinweis": "Öğrenme yardımcısıdır, tablo kitabının yerini tutmaz. Her zaman üreticinin verileri esas alınır.", "schliessen": "Kapat", "sprache_waehlen": "Dil"}, "ru": {"app_name": "Справочник мастерской", "reiter_kfz": "Авто", "reiter_metall": "Металл", "info": "О программе", "info_version": "Версия {v}", "rechte_vorbehalten": "Все права защищены.", "info_hinweis": "Учебное пособие, не заменяет технический справочник. Определяющими всегда являются данные производителя.", "schliessen": "Закрыть", "sprache_waehlen": "Язык"}, "uk": {"app_name": "Довідник майстерні", "reiter_kfz": "Авто", "reiter_metall": "Метал", "info": "Про програму", "info_version": "Версія {v}", "rechte_vorbehalten": "Усі права захищено.", "info_hinweis": "Навчальний посібник, не замінює технічний довідник. Визначальними завжди є дані виробника.", "schliessen": "Закрити", "sprache_waehlen": "Мова"}, "ar": {"app_name": "بطاقة الورشة", "reiter_kfz": "سيارات", "reiter_metall": "معادن", "info": "حول", "info_version": "الإصدار {v}", "rechte_vorbehalten": "جميع الحقوق محفوظة.", "info_hinweis": "وسيلة تعليمية، لا تغني عن كتاب الجداول. المرجع دائمًا هو بيانات الشركة المصنّعة.", "schliessen": "إغلاق", "sprache_waehlen": "اللغة"}, "th": {"app_name": "คู่มือช่าง", "reiter_kfz": "ยานยนต์", "reiter_metall": "โลหะ", "info": "เกี่ยวกับ", "info_version": "เวอร์ชัน {v}", "rechte_vorbehalten": "สงวนลิขสิทธิ์", "info_hinweis": "สื่อช่วยการเรียนรู้ ไม่ใช่สิ่งทดแทนคู่มือตาราง ให้ยึดข้อมูลของผู้ผลิตเป็นหลักเสมอ", "schliessen": "ปิด", "sprache_waehlen": "ภาษา"}, "vi": {"app_name": "Sổ tay xưởng", "reiter_kfz": "Ô tô", "reiter_metall": "Kim loại", "info": "Thông tin", "info_version": "Phiên bản {v}", "rechte_vorbehalten": "Bảo lưu mọi quyền.", "info_hinweis": "Tài liệu hỗ trợ học tập, không thay thế sổ tay tra bảng. Luôn ưu tiên thông số của nhà sản xuất.", "schliessen": "Đóng", "sprache_waehlen": "Ngôn ngữ"}};
+const VERSION = "1.4";
+const KARTEN = [{titel: 'reiter_kfz', datei: 'werkstattkarte-kfz.html'},
+                {titel: 'reiter_metall', datei: 'werkstattkarte-metall.html'}];
+const COPYRIGHT = '© 2026 Frank Gallinat';
+
+// Gespeicherte Wahl (Sprache, Reiter). Ohne Speicher (privates Fenster) läuft alles mit Standardwerten.
+const merk = {
+  lies(k) { try { return localStorage.getItem('wk.' + k); } catch (e) { return null; } },
+  schreib(k, v) { try { localStorage.setItem('wk.' + k, v); } catch (e) {} },
+};
+
+const codes = SPRACHEN.map(s => s.code);
+function startSprache() {
+  const gemerkt = merk.lies('sprache');
+  if (codes.includes(gemerkt)) return gemerkt;
+  for (const l of navigator.languages || [navigator.language || '']) {
+    const c = String(l).toLowerCase().split('-')[0];
+    if (codes.includes(c)) return c;
+  }
+  return 'en';
+}
+
+let sprache = startSprache();
+let aktiv = Math.min(Math.max(parseInt(merk.lies('aktiv') || '0', 10) || 0, 0), KARTEN.length - 1);
+const inhalt = document.getElementById('inhalt');
+const reiter = [...document.querySelectorAll('.reiter')];
+const rahmen = KARTEN.map((k, i) => {
+  const f = document.createElement('iframe');
+  f.title = k.datei;
+  inhalt.appendChild(f);
+  return f;
+});
+const t = k => (TEXTE[sprache] || TEXTE.en)[k];
+const rtl = () => !!(SPRACHEN.find(s => s.code === sprache) || {}).rtl;
+
+function laden() {
+  rahmen.forEach((f, i) => { f.src = sprache + '/' + KARTEN[i].datei; });
+}
+
+function texteSetzen() {
+  document.documentElement.lang = sprache;
+  document.documentElement.dir = rtl() ? 'rtl' : 'ltr';
+  reiter.forEach((r, i) => { r.firstElementChild.textContent = t(KARTEN[i].titel); r.setAttribute('aria-label', t(KARTEN[i].titel)); });
+  document.getElementById('sprachcode').textContent = sprache.toUpperCase();
+  document.getElementById('sprache').setAttribute('aria-label', t('sprache_waehlen'));
+  document.getElementById('info').setAttribute('aria-label', t('info'));
+  document.title = t('app_name');
+}
+
+function zeige(i) {
+  aktiv = i;
+  rahmen.forEach((f, j) => { f.hidden = j !== i; });
+  reiter.forEach((r, j) => r.setAttribute('aria-selected', j === i ? 'true' : 'false'));
+  merk.schreib('aktiv', String(i));
+}
+
+reiter.forEach((r, i) => r.addEventListener('click', () => {
+  if (i === aktiv) {
+    // Erneutes Antippen des aktiven Reiters springt an den Seitenanfang.
+    try { rahmen[i].contentWindow.scrollTo({top: 0, behavior: 'smooth'}); } catch (e) {}
+  } else {
+    if (document.activeElement) document.activeElement.blur();
+    zeige(i);
+  }
+}));
+
+// ---- Sprache
+const sprachdialog = document.getElementById('sprachdialog');
+document.getElementById('sprache').addEventListener('click', () => {
+  document.getElementById('sprachtitel').textContent = t('sprache_waehlen');
+  const liste = document.getElementById('liste');
+  liste.replaceChildren(...SPRACHEN.map(s => {
+    const li = document.createElement('li');
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.setAttribute('role', 'radio');
+    b.setAttribute('aria-checked', s.code === sprache ? 'true' : 'false');
+    // Zeile in der Richtung der App-Sprache, der Name selbst in seiner eigenen Schreibrichtung
+    const name = document.createElement('span');
+    name.lang = s.code;
+    name.dir = s.rtl ? 'rtl' : 'ltr';
+    name.textContent = s.name;
+    b.appendChild(name);
+    b.addEventListener('click', () => {
+      sprachdialog.close();
+      if (s.code !== sprache) {
+        sprache = s.code;
+        merk.schreib('sprache', sprache);
+        texteSetzen();
+        laden();
+      }
+    });
+    li.appendChild(b);
+    return li;
+  }));
+  sprachdialog.showModal();
+});
+
+// ---- Info
+const infodialog = document.getElementById('infodialog');
+document.getElementById('info').addEventListener('click', () => {
+  document.getElementById('infotitel').textContent = t('app_name');
+  const text = document.getElementById('infotext');
+  const cr = document.createElement('span');
+  cr.className = 'ltr';
+  cr.textContent = COPYRIGHT;
+  text.replaceChildren(t('info_version').replace('{v}', VERSION) + '\n\n', cr,
+    '\n' + t('rechte_vorbehalten') + '\n\n' + t('info_hinweis'));
+  document.getElementById('schliessen').textContent = t('schliessen');
+  infodialog.showModal();
+});
+document.getElementById('schliessen').addEventListener('click', () => infodialog.close());
+// Tippen neben das Fenster schließt es
+for (const d of [sprachdialog, infodialog]) {
+  d.addEventListener('click', e => { if (e.target === d) d.close(); });
+}
+
+texteSetzen();
+laden();
+zeige(aktiv);
+
+if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+  // Gibt es eine neue Fassung, übernimmt der neue Service Worker. Kommt das gleich nach dem Start
+  // (noch nichts eingegeben), sofort neu laden; sonst gilt die neue Fassung beim nächsten Start.
+  const hatteAlten = !!navigator.serviceWorker.controller;
+  const start = Date.now();
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (hatteAlten && Date.now() - start < 8000) location.reload();
+  });
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>
